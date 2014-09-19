@@ -94,6 +94,9 @@ wrap_sound(default) -> ["\"sound\":\"default\""];
 wrap_sound(Sound) -> ["\"sound\":\"", Sound, "\""].
 
 wrap_data(undefined) -> [];
+wrap_data([]) -> [];
+wrap_data([{K, V}|T]) when is_binary(K), is_binary(V) ->
+    [[",\"", K, "\":\"", V, "\""] | wrap_data(T)];
 wrap_data(Data) -> [",\"d\":\"", Data, "\""].
 
 
