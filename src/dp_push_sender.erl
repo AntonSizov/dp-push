@@ -23,7 +23,9 @@ start_link(Options) ->
 
 -spec(send(#apns_msg{}, device_token()) -> ok | {error, error()}).
 send(#apns_msg{} = Msg, DeviceToken) ->
-    gen_server:call(?MODULE, {send, Msg, DeviceToken}).
+    gen_server:call(?MODULE, {send, Msg, DeviceToken});
+send(RawMsg, DeviceToken) ->
+    gen_server:call(?MODULE, {send, RawMsg, DeviceToken}).
 
 
 -spec(remove_device_from_failed(device_token()) -> ok).

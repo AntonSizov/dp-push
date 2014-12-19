@@ -9,13 +9,15 @@
 %%% module API
 
 -spec(send(#apns_msg{}, device_token(), #apns{}, #cert{}) -> ok | {error, error()}).
-send(#apns_msg{} = Msg, DeviceToken, #apns{host = Host, port = Port},
+send(#apns_msg{} = Msg, DeviceToken, Apns = #apns{}, Cert = #cert{}) ->
+     Json = wrap_to_json(Msg),
+     send(Json, DeviceToken, Apns, Cert);
+send(RawMsg, DeviceToken, #apns{host = Host, port = Port},
      #cert{certfile = Certfile, password = Password}) ->
-    Json = wrap_to_json(Msg),
-    case byte_size(Json) of
+    case byte_size(RawMsg) of
 	Len when Len > 255 -> {error, too_big};
 	_ -> case ssl:connect(Host, Port, [{certfile, Certfile}, {password, Password}]) of
-		 {ok, Socket} -> ok = ssl:send(Socket, pack_simple(Json, DeviceToken)),
+		 {ok, Socket} -> ok = ssl:send(Socket, pack_simple(RawMsg, DeviceToken)),
 				 ssl:close(Socket),
 				 ok;
 		 {error, Error} -> ?ERROR("can't connect to ~p:~p ~p~n", [Host, Port, Error]),
