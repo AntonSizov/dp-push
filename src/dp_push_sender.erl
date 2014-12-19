@@ -32,7 +32,7 @@ send(#apns_msg{} = Msg, DeviceToken) ->
 	exit:{timeout,_} -> {error, timeout}
     end;
 send(RawMsg, DeviceToken) ->
-    gen_server:call(?MODULE, {send, RawMsg, DeviceToken}, ?CALL_TIMEOUT).
+    gen_server:call(?MODULE, {send, RawMsg, DeviceToken}).
 
 
 -spec(send_without_reply(#apns_msg{}, device_token()) -> ok).
