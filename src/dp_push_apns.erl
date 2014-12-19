@@ -10,17 +10,19 @@
 
 -spec(send(#apns_msg{}, device_token(), #apns{}, #cert{}) ->
 	     ok | {error, too_big, integer()} | {error, term()}).
-send(#apns_msg{} = Msg, DeviceToken, #apns{host = Host, port = Port},
+send(#apns_msg{} = Msg, DeviceToken, Apns = #apns{}, Cert = #cert{}) ->
+     Json = wrap_to_json(Msg),
+     send(Json, DeviceToken, Apns, Cert);
+send(RawMsg, DeviceToken, #apns{host = Host, port = Port},
      #cert{certfile = Certfile, password = Password}) ->
-    Json = wrap_to_json(Msg),
-    case byte_size(Json) of
-	Len when Len > 255 -> {error, too_big, Len};
-	_ -> case ssl:connect(Host, Port, [{certfile, Certfile}, {password, Password}]) of
-		 {ok, Socket} -> ok = ssl:send(Socket, pack_simple(Json, DeviceToken)),
-				 ssl:close(Socket),
-				 ok;
-		 {error, Error} -> ?ERROR("can't connect to ~p:~p ~p~n", [Host, Port, Error]),
-				   {error, Error}
+    case byte_size(RawMsg) of
+	    Len when Len > 255 -> {error, too_big, Len};
+	    _ -> case ssl:connect(Host, Port, [{certfile, Certfile}, {password, Password}]) of
+		    {ok, Socket} -> ok = ssl:send(Socket, pack_simple(RawMsg, DeviceToken)),
+				  ssl:close(Socket),
+				  ok;
+		    {error, Error} -> ?ERROR("can't connect to ~p:~p ~p~n", [Host, Port, Error]),
+				  {error, Error}
 	     end
     end.
 
@@ -37,7 +39,7 @@ get_feedback(#apns{feedback_host = Host, feedback_port = Port},
 			 {error, Error}
     end.
 
-    
+
 read_feedback(Data) ->
     receive
 	{ssl, _, Part} -> read_feedback([Part|Data]);
@@ -58,7 +60,7 @@ get_tokens(Data, Tokens) ->
 	    end;
 	_ -> Tokens
     end.
-    
+
 
 -spec(wrap_to_json(#apns_msg{}) -> binary()).
 wrap_to_json(#apns_msg{alert = Alert, badge = Badge, sound = Sound, data = Data}) ->

@@ -30,7 +30,9 @@ send(#apns_msg{} = Msg, DeviceToken) ->
 	gen_server:call(?MODULE, {send, Msg, DeviceToken}, ?CALL_TIMEOUT)
     catch
 	exit:{timeout,_} -> {error, timeout}
-    end.
+    end;
+send(RawMsg, DeviceToken) ->
+    gen_server:call(?MODULE, {send, RawMsg, DeviceToken}, ?CALL_TIMEOUT).
 
 
 -spec(send_without_reply(#apns_msg{}, device_token()) -> ok).
@@ -69,7 +71,7 @@ handle_call({send, Msg, DeviceToken}, _From,
 	    #state{table_id = TableId, apns = Apns, cert = Cert} = State) ->
     Res = case dets:lookup(TableId, DeviceToken) of
 	      [{DeviceToken, _}] -> {error, failed_delivery};
-	      [] -> dp_push_apns:send(Msg, DeviceToken, Apns, Cert) 
+	      [] -> dp_push_apns:send(Msg, DeviceToken, Apns, Cert)
 	  end,
     {reply, Res, State};
 
@@ -78,11 +80,11 @@ handle_call(Any, _From, State) ->
     {noreply, State}.
 
 
-handle_cast({send_without_reply, Msg, DeviceToken}, 
+handle_cast({send_without_reply, Msg, DeviceToken},
 	    #state{table_id = TableId, apns = Apns, cert = Cert} = State) ->
     case dets:lookup(TableId, DeviceToken) of
 	[{DeviceToken, _}] -> do_nothing;
-	[] -> dp_push_apns:send(Msg, DeviceToken, Apns, Cert) 
+	[] -> dp_push_apns:send(Msg, DeviceToken, Apns, Cert)
     end,
     {noreply, State};
 
@@ -119,7 +121,7 @@ terminate(_Reason, #state{table_id = TableId}) ->
 
 
 code_change(_OldVersion, State, _Extra) ->
-    {ok, State}.	
+    {ok, State}.
 
 
 save_tokens(_TableId, []) -> ok;
@@ -130,5 +132,5 @@ save_tokens(TableId, [Token|Tokens]) ->
 	[] -> dets:insert(TableId, {Token, 1})
     end,
     save_tokens(TableId, Tokens).
-    
-			       
+
+

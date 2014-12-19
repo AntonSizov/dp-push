@@ -3,7 +3,7 @@
 
 -behaviour(application).
 -export([main/0, send/2, send_without_reply/2,
-	 send_alert/2, send_badge/2, send_data/2,
+	 send_alert/2, send_badge/2, send_data/2, send_raw/2,
 	 remove_device_from_failed/1]).
 -export([start/2, stop/1]).
 
@@ -39,6 +39,10 @@ send_badge(Badge, DeviceToken) ->
 send_data(Data, DeviceToken) ->
     send_without_reply(#apns_msg{data = Data}, DeviceToken).
 
+-spec(send_raw(iolist(), device_token()) -> ok | {error, term()}).
+send_raw(Data, DeviceToken) ->
+    dp_push_sender:send(Data, DeviceToken).
+
 
 -spec(remove_device_from_failed(device_token()) -> ok).
 remove_device_from_failed(DeviceToken) ->
@@ -59,7 +63,7 @@ start(_StartType, _StartArgs) ->
     ?WARN("Server started ~p ~p ~n", [Apns, Cert]),
     dp_push_sup:start_link({DetsFile, Interval, Apns, Cert}).
 
-    
+
 stop(_State) ->
     dp_push_sender:stop(),
     ok.
